@@ -1,4 +1,3 @@
-# streamlit_svm_full_app.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -12,13 +11,9 @@ st.set_page_config(page_title="Linear SVM App", layout="wide")
 
 st.title("Linear SVM: Scratch vs scikit-learn")
 
-# ===============================
-# Load / Generate Dataset
-# ===============================
 uploaded_file = st.file_uploader("Upload CSV file (binary classification)", type=["csv"])
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    st.write("Dataset Preview:", df.head())
     all_columns = df.columns.tolist()
     feature_cols = st.multiselect("Select feature columns:", all_columns, default=all_columns[:2])
     label_col = st.selectbox("Select label column:", all_columns, index=len(all_columns)-1)
@@ -35,13 +30,17 @@ else:
                                n_redundant=0, n_clusters_per_class=1,
                                class_sep=0.7, flip_y=0.2, random_state=42)
     y_scratch = np.where(y == 0, -1, 1)
+    df = pd.DataFrame(X, columns=[f"Feature {i+1}" for i in range(X.shape[1])])
+    df['Label'] = y
+
+# ---------------- Dataset Preview ----------------
+st.subheader("Dataset Preview (Toy data by default)")
+st.dataframe(df.head())
 
 # Train/Test Split
 X_train, X_test, y_train, y_test = train_test_split(X, y_scratch, test_size=0.2, random_state=42)
 
-# ===============================
 # Scratch SVM
-# ===============================
 def train_scratch_svm(X, y, lr=0.005, lambda_param=0.01, n_iters=5000):
     w = np.zeros(X.shape[1])
     b = 0
@@ -64,9 +63,7 @@ y_pred_scratch = np.sign(X_test @ w_scratch + b_scratch)
 acc_scratch = accuracy_score(y_test, y_pred_scratch)
 report_scratch = classification_report(y_test, y_pred_scratch, output_dict=True)
 
-# ===============================
 # Function to plot decision boundary
-# ===============================
 def plot_boundary(X, y, w=None, b=None, model=None, title=""):
     x_min, x_max = X[:,0].min()-1, X[:,0].max()+1
     y_min, y_max = X[:,1].min()-1, X[:,1].max()+1
@@ -85,9 +82,6 @@ def plot_boundary(X, y, w=None, b=None, model=None, title=""):
     ax.set_title(title)
     return fig
 
-# ===============================
-# Tabs: Comparison & Play with Parameters
-# ===============================
 tab1, tab2 = st.tabs(["Comparison", "Play with Parameters"])
 
 # ---------------- Comparison Tab ----------------
@@ -106,8 +100,7 @@ with tab1:
     with col1:
         st.markdown("### Scratch SVM")
         with st.expander("View Scratch SVM Code"):
-            st.code('''# Initialize weights
-w = np.zeros(X_train.shape[1])
+            st.code('''w = np.zeros(X_train.shape[1])
 b = 0
 lr = 0.005
 lambda_param = 0.01
@@ -151,7 +144,6 @@ y_pred = svm.predict(X_test)''', language="python")
 with tab2:
     st.subheader("Adjust scikit-learn SVM Parameters")
 
-    # Add sliders for parameters
     C_val = st.slider("Regularization (C)", 0.01, 10.0, 1.0, 0.01)
     max_iter_val = st.slider("Max Iterations", 100, 5000, 1000, 50)
 
